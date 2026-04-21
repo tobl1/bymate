@@ -21,9 +21,9 @@ export default function LandingPage() {
   }, [])
 
   return (
-    <main style={{ fontFamily: "'DM Sans', sans-serif" }} className="min-h-screen bg-[#0a0a0a] text-white">
+    <main style={{ fontFamily: "'Atkinson Hyperlegible', sans-serif" }} className="min-h-screen bg-[#0a0a0a] text-white">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=DM+Serif+Display:ital@0;1&display=swap');
         * { box-sizing: border-box; }
         .hero-title { font-family: 'DM Serif Display', serif; }
         .tag { 

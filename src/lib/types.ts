@@ -24,7 +24,20 @@ export type Profile = {
   role: UserRole
   bio: string | null
   location: string | null
+  headline: string | null
+  skills: string[]
+  available: boolean
   created_at: string
+}
+
+export type Message = {
+  id: string
+  sender_id: string
+  recipient_id: string
+  listing_id: string | null
+  body: string
+  created_at: string
+  read_at: string | null
 }
 
 export const STAGE_LABELS: Record<Stage, string> = {

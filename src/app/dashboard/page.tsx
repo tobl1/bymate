@@ -30,6 +30,12 @@ export default async function Dashboard() {
   const own = (ownListings ?? []) as Listing[]
   const isFounder = profile.role === 'founder'
 
+  const { count: unreadCount } = await supabase
+    .from('messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('recipient_id', user.id)
+    .is('read_at', null)
+
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white">
       <nav className="flex items-center justify-between px-8 py-6 max-w-6xl mx-auto">
@@ -54,23 +60,48 @@ export default async function Dashboard() {
             : 'Schau, welche Gründer aktuell ein Team aufbauen.'}
         </p>
 
-        <div className="grid md:grid-cols-2 gap-4 mb-12">
+        <div className="grid md:grid-cols-3 gap-4 mb-12">
           <Link
             href="/listings"
             className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/25 transition"
           >
             <div className="text-2xl mb-2">🔍</div>
             <h3 className="text-lg font-medium mb-1">Anzeigen durchsuchen</h3>
-            <p className="text-sm text-white/50">Alle aktiven Gesuche in Bayern.</p>
+            <p className="text-sm text-white/50">Aktive Gesuche in Bayern.</p>
+          </Link>
+
+          <Link
+            href="/talents"
+            className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/25 transition"
+          >
+            <div className="text-2xl mb-2">👥</div>
+            <h3 className="text-lg font-medium mb-1">Talente entdecken</h3>
+            <p className="text-sm text-white/50">Menschen, die mitbauen wollen.</p>
+          </Link>
+
+          <Link
+            href="/messages"
+            className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/25 transition relative"
+          >
+            <div className="text-2xl mb-2">💬</div>
+            <h3 className="text-lg font-medium mb-1">Nachrichten</h3>
+            <p className="text-sm text-white/50">
+              {unreadCount ? `${unreadCount} ungelesen` : 'Inbox öffnen'}
+            </p>
+            {!!unreadCount && (
+              <span className="absolute top-5 right-5 text-[10px] bg-emerald-500 text-black rounded-full px-2 py-0.5 font-medium">
+                {unreadCount}
+              </span>
+            )}
           </Link>
 
           {isFounder && (
             <Link
               href="/listings/new"
-              className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/25 transition"
+              className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/25 transition md:col-span-3"
             >
               <div className="text-2xl mb-2">➕</div>
-              <h3 className="text-lg font-medium mb-1">Neue Anzeige</h3>
+              <h3 className="text-lg font-medium mb-1">Neue Anzeige schalten</h3>
               <p className="text-sm text-white/50">Beschreib dein Startup und wen du suchst.</p>
             </Link>
           )}

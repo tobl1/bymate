@@ -16,6 +16,9 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+grant select, insert, update on public.profiles to authenticated;
+grant select on public.profiles to anon;
+
 drop policy if exists "profiles_select_all" on public.profiles;
 create policy "profiles_select_all"
   on public.profiles for select
@@ -34,6 +37,11 @@ create policy "profiles_update_own"
 -- ============================================================
 -- listings  (Gesuche von Gründern)
 -- ============================================================
+-- Falls eine alte listings-Tabelle in anderer Form existiert,
+-- wird sie hier gedroppt. Solange noch keine echten Daten drin
+-- sind, ist das unkritisch.
+drop table if exists public.listings cascade;
+
 create table if not exists public.listings (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users on delete cascade,
@@ -61,6 +69,9 @@ create index if not exists listings_created_at_idx on public.listings (created_a
 create index if not exists listings_owner_idx on public.listings (owner_id);
 
 alter table public.listings enable row level security;
+
+grant select, insert, update, delete on public.listings to authenticated;
+grant select on public.listings to anon;
 
 -- öffentlich sichtbar: aktive Listings
 drop policy if exists "listings_select_active" on public.listings;

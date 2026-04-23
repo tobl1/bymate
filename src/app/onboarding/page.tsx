@@ -14,16 +14,25 @@ export default function OnboardingPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const router = useRouter()
-  const supabase = createClient()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const supabase = createClient()
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
         router.push('/auth')
-      } else {
-        setUserId(session.user.id)
-        setUserEmail(session.user.email ?? null)
+        return
       }
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', session.user.id)
+        .maybeSingle()
+      if (existing) {
+        router.push('/dashboard')
+        return
+      }
+      setUserId(session.user.id)
+      setUserEmail(session.user.email ?? null)
     })
   }, [])
 
@@ -32,7 +41,8 @@ export default function OnboardingPage() {
     setLoading(true)
     setError('')
 
-    const { error } = await supabase.from('profiles').insert({
+    const supabase = createClient()
+    const { error } = await supabase.from('profiles').upsert({
       id: userId,
       email: userEmail,
       full_name: fullName,

@@ -44,6 +44,14 @@ export default async function Dashboard() {
         </Link>
         <div className="flex items-center gap-4">
           <span className="text-sm text-white/50">{profile.full_name}</span>
+          <form action="/auth/signout" method="post">
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-full border border-white/15 text-sm hover:border-white/40 transition"
+            >
+              Logout
+            </button>
+          </form>
         </div>
       </nav>
 

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { STAGE_LABELS, type Listing } from '@/lib/types'
+import OwnerActions from './owner-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,6 +61,11 @@ export default async function ListingDetailPage({
               Deine Anzeige
             </span>
           )}
+          {listing.status !== 'active' && (
+            <span className="text-[10px] uppercase tracking-widest text-amber-300 bg-amber-500/15 rounded-full px-2 py-1">
+              {listing.status === 'paused' ? 'Pausiert' : 'Geschlossen'}
+            </span>
+          )}
         </div>
 
         <h1
@@ -90,6 +96,10 @@ export default async function ListingDetailPage({
               ))}
             </div>
           </div>
+        )}
+
+        {isOwner && (
+          <OwnerActions listingId={listing.id} status={listing.status} />
         )}
 
         {!isOwner && (

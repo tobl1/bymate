@@ -1,7 +1,14 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PROTECTED_PREFIXES = ['/dashboard', '/onboarding', '/listings/new', '/messages']
+const PROTECTED_PREFIXES = [
+  '/dashboard',
+  '/onboarding',
+  '/listings',
+  '/talents',
+  '/messages',
+  '/profile',
+]
 
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next({ request })
@@ -33,12 +40,15 @@ export async function proxy(request: NextRequest) {
   if (isProtected && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth'
+    url.search = `?next=${encodeURIComponent(pathname + request.nextUrl.search)}`
     return NextResponse.redirect(url)
   }
 
   if (pathname === '/auth' && user) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    const next = request.nextUrl.searchParams.get('next')
+    url.search = ''
+    url.pathname = next && next.startsWith('/') ? next : '/dashboard'
     return NextResponse.redirect(url)
   }
 

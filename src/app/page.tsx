@@ -153,8 +153,11 @@ export default function LandingPage() {
           <br />
           fürs Team.
         </h1>
-        <p className="text-lg mb-10" style={{color: 'rgba(255,255,255,0.45)', maxWidth: '480px', margin: '0 auto 40px', lineHeight: '1.6'}}>
+        <p className="text-lg mb-4" style={{color: 'rgba(255,255,255,0.45)', maxWidth: '480px', margin: '0 auto 16px', lineHeight: '1.6'}}>
           BYmate verbindet Gründer mit freiem Teamplatz und Talente, die beim Aufbau eines Startups dabei sein wollen. Bayern-weit.
+        </p>
+        <p className="mb-10" style={{color: 'rgba(255,255,255,0.3)', fontSize: '13px', maxWidth: '480px', margin: '0 auto 40px'}}>
+          Equity-only · Vollzeit · Keine Gebühren
         </p>
         <div className="flex items-center justify-center gap-4 flex-wrap">
           <Link href="/auth" className="cta-btn">Jetzt mitmachen</Link>

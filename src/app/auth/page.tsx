@@ -1,16 +1,26 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { createClient } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function AuthPage() {
+  return (
+    <Suspense>
+      <AuthForm />
+    </Suspense>
+  )
+}
+
+function AuthForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLogin, setIsLogin] = useState(true)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const nextParam = searchParams.get('next')
 
   async function handleSubmit() {
     const supabase = createClient()
@@ -29,7 +39,11 @@ export default function AuthPage() {
         .select('id')
         .eq('id', data.user.id)
         .maybeSingle()
-      router.push(profile ? '/dashboard' : '/onboarding')
+      if (profile) {
+        router.push(nextParam || '/dashboard')
+      } else {
+        router.push('/onboarding')
+      }
     } else {
       const { error } = await supabase.auth.signUp({ email, password })
       if (error) setError(error.message)

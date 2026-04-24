@@ -1,6 +1,8 @@
+import Image from 'next/image'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
-import { STAGE_LABELS, type Listing, type Stage } from '@/lib/types'
+import { INDUSTRIES, STAGE_LABELS, type Listing, type Stage } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,15 +20,21 @@ export default async function ListingsPage({
   const params = await searchParams
   const supabase = await createServerSupabaseClient()
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/auth?next=/listings')
+
   let query = supabase
     .from('listings')
     .select('*')
     .eq('status', 'active')
+    .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
 
   if (params.location) query = query.ilike('location', `%${params.location}%`)
   if (params.stage) query = query.eq('stage', params.stage)
-  if (params.industry) query = query.ilike('industry', `%${params.industry}%`)
+  if (params.industry) query = query.eq('industry', params.industry)
 
   const { data: listings, error } = await query
   const rows = (listings ?? []) as Listing[]
@@ -57,7 +65,8 @@ export default async function ListingsPage({
         <h1 className="text-4xl md:text-5xl mb-2" style={{ fontFamily: "'DM Serif Display', serif", letterSpacing: '-0.02em' }}>
           Offene Teamplätze
         </h1>
-        <p className="text-white/40 mb-10">Gründer in Bayern, die gerade ein Team aufbauen.</p>
+        <p className="text-white/40 mb-2">Gründer in Bayern, die gerade ein Team aufbauen.</p>
+        <p className="text-xs text-white/30 mb-10">Alle Anzeigen sind Equity-only auf Vollzeit-Basis.</p>
 
         <form className="flex flex-wrap gap-3 mb-10" method="get">
           <input
@@ -66,12 +75,18 @@ export default async function ListingsPage({
             placeholder="Ort (z.B. München)"
             className="bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm placeholder:text-white/30 focus:outline-none focus:border-white/30"
           />
-          <input
+          <select
             name="industry"
             defaultValue={params.industry ?? ''}
-            placeholder="Branche"
-            className="bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm placeholder:text-white/30 focus:outline-none focus:border-white/30"
-          />
+            className="bg-white/5 border border-white/10 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-white/30"
+          >
+            <option value="">Alle Branchen</option>
+            {INDUSTRIES.map(i => (
+              <option key={i} value={i} className="bg-[#0a0a0a]">
+                {i}
+              </option>
+            ))}
+          </select>
           <select
             name="stage"
             defaultValue={params.stage ?? ''}
@@ -115,6 +130,7 @@ export default async function ListingsPage({
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs uppercase tracking-wider text-white/40">
                   {STAGE_LABELS[l.stage]} · {l.location}
+                  {l.remote && ' · Remote'}
                 </span>
                 {l.stealth && (
                   <span className="text-[10px] uppercase tracking-widest text-white/60 bg-white/10 rounded-full px-2 py-1">
@@ -122,13 +138,32 @@ export default async function ListingsPage({
                   </span>
                 )}
               </div>
-              <h3 className="text-xl mb-1" style={{ fontFamily: "'DM Serif Display', serif" }}>
-                {l.stealth || !l.startup_name ? l.industry : l.startup_name}
-              </h3>
-              {!l.stealth && l.startup_name && (
-                <p className="text-sm text-white/40 mb-3">{l.industry}</p>
+              <div className="flex items-start gap-3 mb-2">
+                {!l.stealth && l.logo_url && (
+                  <Image
+                    src={l.logo_url}
+                    alt=""
+                    width={40}
+                    height={40}
+                    unoptimized
+                    className="rounded-lg border border-white/10 object-cover"
+                    style={{ width: 40, height: 40 }}
+                  />
+                )}
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-xl leading-tight" style={{ fontFamily: "'DM Serif Display', serif" }}>
+                    {l.stealth || !l.startup_name ? l.industry : l.startup_name}
+                  </h3>
+                  {!l.stealth && l.startup_name && (
+                    <p className="text-xs text-white/40 mt-1">{l.industry}</p>
+                  )}
+                </div>
+              </div>
+              {l.teaser ? (
+                <p className="text-sm text-white/70 leading-relaxed">{l.teaser}</p>
+              ) : (
+                <p className="text-sm text-white/60 line-clamp-3">{l.description}</p>
               )}
-              <p className="text-sm text-white/60 line-clamp-3">{l.description}</p>
               {l.roles_needed.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-4">
                   {l.roles_needed.map(r => (

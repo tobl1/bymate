@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
@@ -47,10 +48,16 @@ export default async function ListingDetailPage({
       </nav>
 
       <section className="max-w-3xl mx-auto px-6 pt-4 pb-24">
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-4 flex-wrap">
           <span className="text-xs uppercase tracking-wider text-white/40">
-            {listing.location} · {STAGE_LABELS[listing.stage]}
+            {listing.location}
+            {listing.remote && ' · Remote möglich'} · {STAGE_LABELS[listing.stage]}
           </span>
+          {listing.gmbh_founded && (
+            <span className="text-[10px] uppercase tracking-widest text-white/70 bg-white/10 rounded-full px-2 py-1">
+              GmbH gegründet
+            </span>
+          )}
           {listing.stealth && (
             <span className="text-[10px] uppercase tracking-widest text-white/70 bg-white/10 rounded-full px-2 py-1">
               Stealth
@@ -68,19 +75,43 @@ export default async function ListingDetailPage({
           )}
         </div>
 
-        <h1
-          className="text-4xl md:text-5xl mb-3"
-          style={{ fontFamily: "'DM Serif Display', serif", letterSpacing: '-0.02em' }}
-        >
-          {displayName}
-        </h1>
-        {!listing.stealth && listing.startup_name && (
-          <p className="text-white/50 mb-8">{listing.industry}</p>
+        <div className="flex items-start gap-5 mb-3">
+          {!listing.stealth && listing.logo_url && (
+            <Image
+              src={listing.logo_url}
+              alt=""
+              width={72}
+              height={72}
+              unoptimized
+              className="w-18 h-18 rounded-2xl border border-white/10 object-cover"
+              style={{ width: 72, height: 72 }}
+            />
+          )}
+          <div>
+            <h1
+              className="text-4xl md:text-5xl mb-1"
+              style={{ fontFamily: "'DM Serif Display', serif", letterSpacing: '-0.02em' }}
+            >
+              {displayName}
+            </h1>
+            {!listing.stealth && listing.startup_name && (
+              <p className="text-white/50">{listing.industry}</p>
+            )}
+          </div>
+        </div>
+
+        {listing.teaser && (
+          <p className="text-lg text-white/80 leading-relaxed mb-8 mt-4">{listing.teaser}</p>
         )}
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 mb-8 whitespace-pre-wrap text-white/80 leading-relaxed">
-          {listing.description}
-        </div>
+        <Section label="Beschreibung" body={listing.description} />
+
+        {listing.team_description && (
+          <Section label="Team" body={listing.team_description} />
+        )}
+        {listing.story && <Section label="Unsere Story" body={listing.story} />}
+        {listing.current_team && <Section label="Aktuelles Team" body={listing.current_team} />}
+        {listing.why_us && <Section label="Why us" body={listing.why_us} />}
 
         {listing.roles_needed.length > 0 && (
           <div className="mb-10">
@@ -97,6 +128,25 @@ export default async function ListingDetailPage({
             </div>
           </div>
         )}
+
+        {(listing.website_url || listing.linkedin_company_url || listing.linkedin_person_url) && !listing.stealth && (
+          <div className="mb-10">
+            <p className="text-xs uppercase tracking-widest text-white/40 mb-3">Links</p>
+            <div className="flex flex-wrap gap-2">
+              {listing.website_url && <LinkPill href={listing.website_url} label="Website" />}
+              {listing.linkedin_company_url && (
+                <LinkPill href={listing.linkedin_company_url} label="LinkedIn (Team)" />
+              )}
+              {listing.linkedin_person_url && (
+                <LinkPill href={listing.linkedin_person_url} label="LinkedIn (Person)" />
+              )}
+            </div>
+          </div>
+        )}
+
+        <p className="text-xs text-white/30 mb-10">
+          Alle BYmate-Anzeigen sind Equity-only auf Vollzeit-Basis.
+        </p>
 
         {isOwner && (
           <OwnerActions listingId={listing.id} status={listing.status} />
@@ -129,5 +179,29 @@ export default async function ListingDetailPage({
         )}
       </section>
     </main>
+  )
+}
+
+function Section({ label, body }: { label: string; body: string }) {
+  return (
+    <div className="mb-8">
+      <p className="text-xs uppercase tracking-widest text-white/40 mb-3">{label}</p>
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 whitespace-pre-wrap text-white/80 leading-relaxed">
+        {body}
+      </div>
+    </div>
+  )
+}
+
+function LinkPill({ href, label }: { href: string; label: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-sm text-white/80 bg-white/5 border border-white/10 rounded-full px-4 py-1.5 hover:border-white/30 transition"
+    >
+      {label} ↗
+    </a>
   )
 }

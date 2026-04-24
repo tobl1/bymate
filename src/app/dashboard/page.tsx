@@ -103,7 +103,7 @@ export default async function Dashboard() {
             )}
           </Link>
 
-          {isFounder && (
+          {isFounder ? (
             <Link
               href="/listings/new"
               className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/25 transition md:col-span-3"
@@ -111,6 +111,15 @@ export default async function Dashboard() {
               <div className="text-2xl mb-2">➕</div>
               <h3 className="text-lg font-medium mb-1">Neue Anzeige schalten</h3>
               <p className="text-sm text-white/50">Beschreib dein Startup und wen du suchst.</p>
+            </Link>
+          ) : (
+            <Link
+              href="/profile/edit"
+              className="rounded-2xl border border-white/10 bg-white/5 p-6 hover:border-white/25 transition md:col-span-3"
+            >
+              <div className="text-2xl mb-2">✏️</div>
+              <h3 className="text-lg font-medium mb-1">Profil bearbeiten</h3>
+              <p className="text-sm text-white/50">Foto, Skills, Was du mitbringst.</p>
             </Link>
           )}
         </div>

@@ -1,22 +1,29 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase'
+import ImageUpload from '@/components/ImageUpload'
 import {
-  ROLE_SUGGESTIONS,
-  STAGE_LABELS,
-  SEEKER_TYPE_LABELS,
   MAX_ROLES,
+  ROLE_SUGGESTIONS,
+  SEEKER_TYPE_LABELS,
+  STAGE_LABELS,
+  type Profile,
   type SeekerType,
   type Stage,
-  type UserRole,
 } from '@/lib/types'
-import ImageUpload from '@/components/ImageUpload'
 
-export default function OnboardingPage() {
+export default function ProfileEditPage() {
+  const router = useRouter()
+  const [userId, setUserId] = useState<string | null>(null)
+  const [ready, setReady] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
   const [fullName, setFullName] = useState('')
-  const [role, setRole] = useState<UserRole>('founder')
+  const [role, setRole] = useState<'founder' | 'seeker'>('founder')
   const [bio, setBio] = useState('')
   const [location, setLocation] = useState('')
   const [headline, setHeadline] = useState('')
@@ -27,32 +34,42 @@ export default function OnboardingPage() {
   const [contribution, setContribution] = useState('')
   const [linkedinUrl, setLinkedinUrl] = useState('')
   const [portfolioUrl, setPortfolioUrl] = useState('')
-
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [userId, setUserId] = useState<string | null>(null)
-  const [userEmail, setUserEmail] = useState<string | null>(null)
-  const router = useRouter()
+  const [available, setAvailable] = useState(true)
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    ;(async () => {
+      const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
         router.push('/auth')
         return
       }
-      const { data: existing } = await supabase
+      const { data } = await supabase
         .from('profiles')
-        .select('id')
+        .select('*')
         .eq('id', session.user.id)
         .maybeSingle()
-      if (existing) {
-        router.push('/dashboard')
+      if (!data) {
+        router.push('/onboarding')
         return
       }
-      setUserId(session.user.id)
-      setUserEmail(session.user.email ?? null)
-    })
+      const p = data as Profile
+      setUserId(p.id)
+      setFullName(p.full_name)
+      setRole(p.role)
+      setBio(p.bio ?? '')
+      setLocation(p.location ?? '')
+      setHeadline(p.headline ?? '')
+      setSkills(p.skills ?? [])
+      setPhotoUrl(p.photo_url ?? null)
+      setSeekerType(p.seeker_type ?? 'cofounder')
+      setDesiredStage(p.desired_stage ?? 'idea')
+      setContribution(p.contribution ?? '')
+      setLinkedinUrl(p.linkedin_url ?? '')
+      setPortfolioUrl(p.portfolio_url ?? '')
+      setAvailable(p.available)
+      setReady(true)
+    })()
   }, [])
 
   function toggleSkill(s: string) {
@@ -63,89 +80,79 @@ export default function OnboardingPage() {
     })
   }
 
-  async function handleSubmit() {
-    if (!userId || !userEmail) return
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!userId) return
     if (role === 'seeker' && !photoUrl) {
-      setError('Für Talent-Profile ist ein Foto Pflicht.')
+      setError('Foto ist Pflicht für Talent-Profile.')
       return
     }
     setLoading(true)
     setError('')
-
     const supabase = createClient()
-    const { error } = await supabase.from('profiles').upsert({
-      id: userId,
-      email: userEmail,
-      full_name: fullName,
-      role,
-      bio,
-      location,
-      headline: role === 'seeker' ? headline : null,
-      skills: role === 'seeker' ? skills : [],
-      photo_url: role === 'seeker' ? photoUrl : null,
-      seeker_type: role === 'seeker' ? seekerType : null,
-      desired_stage: role === 'seeker' ? desiredStage : null,
-      contribution: role === 'seeker' ? contribution : null,
-      linkedin_url: linkedinUrl.trim() || null,
-      portfolio_url: role === 'seeker' ? portfolioUrl.trim() || null : null,
-    })
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        full_name: fullName,
+        bio,
+        location,
+        headline: role === 'seeker' ? headline : null,
+        skills: role === 'seeker' ? skills : [],
+        photo_url: role === 'seeker' ? photoUrl : null,
+        seeker_type: role === 'seeker' ? seekerType : null,
+        desired_stage: role === 'seeker' ? desiredStage : null,
+        contribution: role === 'seeker' ? contribution : null,
+        linkedin_url: linkedinUrl.trim() || null,
+        portfolio_url: role === 'seeker' ? portfolioUrl.trim() || null : null,
+        available,
+      })
+      .eq('id', userId)
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+      return
+    }
+    router.push('/dashboard')
+    router.refresh()
+  }
 
-    if (error) setError(error.message)
-    else router.push('/dashboard')
-    setLoading(false)
+  if (!ready) {
+    return (
+      <main className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
+        <p className="text-white/40">Lade...</p>
+      </main>
+    )
   }
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-lg">
-        <h1
-          className="text-4xl mb-2"
-          style={{ fontFamily: "'DM Serif Display', serif", letterSpacing: '-0.02em' }}
+    <main className="min-h-screen bg-[#0a0a0a] text-white">
+      <nav className="flex items-center justify-between px-8 py-6 max-w-6xl mx-auto">
+        <Link href="/" className="text-xl" style={{ fontFamily: "'DM Serif Display', serif" }}>
+          BYmate
+        </Link>
+        <Link
+          href="/dashboard"
+          className="px-4 py-2 rounded-full border border-white/15 text-sm hover:border-white/40 transition"
         >
-          Profil anlegen
-        </h1>
-        <p className="text-white/40 mb-6">Nur einmal, dauert 2 Minuten.</p>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-xs text-white/50 mb-10 leading-relaxed">
-          BYmate vermittelt ausschließlich <strong className="text-white/80">Equity-only</strong>-Engagements auf <strong className="text-white/80">Vollzeit-Basis</strong>.
-          Keine Freelance-Jobs, keine Gehalts-Positionen.
-        </div>
+          Abbrechen
+        </Link>
+      </nav>
 
-        <div className="space-y-6">
+      <section className="max-w-2xl mx-auto px-6 pt-4 pb-24">
+        <h1 className="text-4xl mb-2" style={{ fontFamily: "'DM Serif Display', serif", letterSpacing: '-0.02em' }}>
+          Profil bearbeiten
+        </h1>
+        <p className="text-white/40 mb-10">Änderungen sind sofort live.</p>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
           <Field label="Name *">
             <input
               type="text"
-              placeholder="Dein Name"
               value={fullName}
               onChange={e => setFullName(e.target.value)}
               className="field"
+              required
             />
-          </Field>
-
-          <Field label="Ich bin...">
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setRole('founder')}
-                className={`flex-1 py-3 rounded-2xl border text-sm font-medium transition ${
-                  role === 'founder'
-                    ? 'bg-white text-black border-white'
-                    : 'bg-white/5 text-white border-white/10 hover:border-white/30'
-                }`}
-              >
-                Gründer mit freiem Platz
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('seeker')}
-                className={`flex-1 py-3 rounded-2xl border text-sm font-medium transition ${
-                  role === 'seeker'
-                    ? 'bg-white text-black border-white'
-                    : 'bg-white/5 text-white border-white/10 hover:border-white/30'
-                }`}
-              >
-                Auf Teamsuche
-              </button>
-            </div>
           </Field>
 
           {role === 'seeker' && userId && (
@@ -164,7 +171,6 @@ export default function OnboardingPage() {
             <Field label="Headline">
               <input
                 type="text"
-                placeholder='z.B. "Fullstack Dev sucht Fintech Team"'
                 value={headline}
                 onChange={e => setHeadline(e.target.value)}
                 className="field"
@@ -174,11 +180,6 @@ export default function OnboardingPage() {
 
           <Field label="Über mich">
             <textarea
-              placeholder={
-                role === 'founder'
-                  ? 'Wer bist du, woran arbeitest du?'
-                  : 'Was machst du, was suchst du?'
-              }
               value={bio}
               onChange={e => setBio(e.target.value)}
               rows={4}
@@ -189,7 +190,6 @@ export default function OnboardingPage() {
           <Field label="Standort">
             <input
               type="text"
-              placeholder="z.B. München"
               value={location}
               onChange={e => setLocation(e.target.value)}
               className="field"
@@ -198,7 +198,7 @@ export default function OnboardingPage() {
 
           {role === 'seeker' && (
             <>
-              <Field label="Ich suche als...">
+              <Field label="Ich suche als">
                 <div className="flex gap-3">
                   {(Object.keys(SEEKER_TYPE_LABELS) as SeekerType[]).map(k => (
                     <button
@@ -263,7 +263,6 @@ export default function OnboardingPage() {
                   value={contribution}
                   onChange={e => setContribution(e.target.value)}
                   rows={3}
-                  placeholder="Deine Stärken, Erfahrung, was du einbringst..."
                   className="field"
                 />
               </Field>
@@ -277,6 +276,15 @@ export default function OnboardingPage() {
                   className="field"
                 />
               </Field>
+
+              <label className="flex items-center gap-3 p-4 rounded-2xl border border-white/10 bg-white/5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={available}
+                  onChange={e => setAvailable(e.target.checked)}
+                />
+                <span className="text-sm">Aktuell verfügbar für Matches</span>
+              </label>
             </>
           )}
 
@@ -297,14 +305,14 @@ export default function OnboardingPage() {
           )}
 
           <button
-            onClick={handleSubmit}
+            type="submit"
             disabled={loading || !fullName}
-            className="w-full px-6 py-3 rounded-full bg-white text-black font-medium hover:opacity-85 disabled:opacity-40 transition"
+            className="px-6 py-3 rounded-full bg-white text-black font-medium hover:opacity-85 disabled:opacity-40 transition"
           >
-            {loading ? 'Speichere...' : 'Weiter'}
+            {loading ? 'Speichere...' : 'Änderungen speichern'}
           </button>
-        </div>
-      </div>
+        </form>
+      </section>
 
       <style>{`
         .field {
